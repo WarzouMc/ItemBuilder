@@ -1,182 +1,257 @@
-package yourPackage;
-
-import org.bukkit.Material;
-import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-
-import java.util.Arrays;
+import javax.swing.*;
+import javax.swing.border.Border;
+import java.awt.*;
+import java.lang.reflect.GenericArrayType;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * <i>Just open ItemBuilder</i>
+ * <i>FrameBuilder is just a simple class for create JFrame</i>
  * @author WarzouMc
  */
-public class ItemBuilder {
+
+public class FrameBuilder {
+
+    private JFrame jFrame;
 
     /**
-     * Vars
-     */
-    private Inventory inventory;
-    private ItemStack itemStack;
-    private ItemMeta itemMeta;
-
-    /**
-     * init ItemBuilder
-     * @param material
-     */
-    public ItemBuilder(Material material){
-        this(material, 1);
+     * Instance without parameter
+      */
+    public FrameBuilder(){
+        jFrame = new JFrame();
     }
 
     /**
-     * init ItemBuilder
-     * @param material
-     * @param amount
+     * Instance with JFrame parameter
+     * @param jFrame
      */
-    public ItemBuilder(Material material, int amount) {
-        this(material, amount, 0);
+    public FrameBuilder(JFrame jFrame){
+        this.jFrame = jFrame;
     }
 
     /**
-     * init ItemBuilder
-     * @param material
-     * @param amount
-     * @param data
-     */
-    public ItemBuilder(Material material, int amount, int data) {
-        this.itemStack = new ItemStack(material, amount, (byte)data);
-    }
-
-    /**
-     * set this.inventory value
-     * @param inventory
+     * clone your frame
      * @return
      */
-    public ItemBuilder inventory(Inventory inventory){
-        this.inventory = inventory;
+    public FrameBuilder clone(){
+        return new FrameBuilder(jFrame);
+    }
+
+    /**
+     * Set the title of your frame
+     * @param title
+     * @return
+     */
+    public FrameBuilder setTitle(String title){
+        jFrame.setTitle(title);
         return this;
     }
 
     /**
-     * set the display name of the item
-     * @param var1
+     * set x size of the frame
+     * @param xSize
      * @return
      */
-    public ItemBuilder setName(String var1){
-        ItemMeta itemMeta = itemStack.getItemMeta();
-        itemMeta.setDisplayName(var1);
-        itemStack.setItemMeta(itemMeta);
+    public FrameBuilder setXSize(int xSize){
+        jFrame.setSize(xSize, getZSize());
         return this;
     }
 
     /**
-     * Add lore from String list
-     * @param lores
+     * set z size of the frame
+     * @param zSize
      * @return
      */
-    public ItemBuilder addLore(List<String> lores){
-        ItemMeta itemMeta = itemStack.getItemMeta();
-        itemMeta.setLore(lores);
-        itemStack.setItemMeta(itemMeta);
+    public FrameBuilder setZSize(int zSize){
+        jFrame.setSize(getXSize(), zSize);
         return this;
     }
 
     /**
-     * Add lore from String...
-     * @param lores
+     * set x and z size of the frame
+     * @param xSize
+     * @param zSize
      * @return
      */
-    public ItemBuilder addLore(String... lores){
-        addLore(Arrays.asList(lores));
+    public FrameBuilder setXAndZSize(int xSize, int zSize){
+        jFrame.setSize(xSize, zSize);
         return this;
     }
 
     /**
-     * add enchant to the item
-     * @param enchantment
-     * @param value
+     * Set location relative to
+     * null = middle
+     * @param c
+     * @return
+     */
+    public FrameBuilder setLocationRelativeTo(Component c){
+        jFrame.setLocationRelativeTo(c);
+        return this;
+    }
+
+    /**
+     * Set close default operation
+     * @param i
+     * @return
+     */
+    public FrameBuilder setCloseAction(int i){
+        jFrame.setDefaultCloseOperation(i);
+        return this;
+    }
+
+    /**
+     * Define if user could resize the frame
      * @param b
      * @return
      */
-    public ItemBuilder addEnchantment(Enchantment enchantment, int value, boolean b){
-        ItemMeta itemMeta = this.itemStack.getItemMeta();
-        itemMeta.addEnchant(enchantment, value, b);
-        itemStack.setItemMeta(itemMeta);
+    public FrameBuilder setResiable(boolean b){
+        jFrame.setResizable(b);
         return this;
     }
 
     /**
-     * Set durrability of item
-     * /!\ 100 >= percent >= 0
-     * @param percent
+     * Set icon on your frame
+     * @param path
      * @return
      */
-    public ItemBuilder setDurability(float percent){
-        if (percent > 100.0){
-            return this;
-        }else if (percent < 0.0){
-            return this;
+    public FrameBuilder icon(String path){
+        ImageIcon imageIcon = new ImageIcon(path);
+        jFrame.setIconImage(imageIcon.getImage());
+        return this;
+    }
+
+    /**
+     * Set colored background
+     * @param color
+     * @return
+     */
+    public FrameBuilder setBackground(Color color){
+        jFrame.getContentPane().setBackground(color);
+        return this;
+    }
+
+    /**
+     * Set background image
+     * @param path
+     * @return
+     */
+    public FrameBuilder setBackground(String path){
+        jFrame.setLayout(new BorderLayout());
+        JLabel jLabel = new JLabel(new ImageIcon(path));
+        jFrame.add(jLabel);
+        jLabel.setLayout(new FlowLayout());
+        return this;
+    }
+
+    /**
+     * add JMenuBar with name
+     * @param name
+     * @return
+     */
+    public FrameBuilder setJMenuBar(String name){
+        JMenuBar jMenuBar = new JMenuBar();
+        JMenu menu = new JMenu(name);
+        jMenuBar.add(menu);
+        jFrame.setJMenuBar(jMenuBar);
+        return this;
+    }
+
+    /**
+     * add JMenuBar with name and menu icon
+     * Icons precision : set null for no icon
+     * @param name
+     * @return
+     */
+    public FrameBuilder setJMenuBar(String name, String menuIcon){
+        JMenuBar jMenuBar = new JMenuBar();
+        JMenu menu = new JMenu(name);
+        if (!menuIcon.equalsIgnoreCase("null")) {
+            menu.setIcon(new ImageIcon(menuIcon));
         }
-        itemStack.setDurability((short) (itemStack.getDurability() * (percent / 100)));
+        jMenuBar.add(menu);
+        jFrame.setJMenuBar(jMenuBar);
         return this;
     }
 
     /**
-     * Inject item in inventory
-     * @param inventory
-     * @param position
+     * add JMenuBar with name, menu icon and submenus
+     * Icons precision : set null for no icon
+     * @param name
      * @return
      */
-    public ItemBuilder inject(Inventory inventory, int position){
-        inventory.setItem(position, toItemStack());
+    public FrameBuilder setJMenuBar(String name, String menuIcon, List<String> menuItemString){
+        JMenuBar jMenuBar = new JMenuBar();
+        JMenu menu = new JMenu(name);
+        for (String string : menuItemString) {
+            JMenuItem jMenuItem = new JMenuItem(string);
+            menu.add(jMenuItem);
+        }
+        jMenuBar.add(menu);
+        jFrame.setJMenuBar(jMenuBar);
         return this;
     }
 
     /**
-     * Inject item in inventory
-     * @param inventory
+     * add JMenuBar with name, menu icon, submenus and submenus icon
+     * Icons precision : set null for no icon
+     * @param name
      * @return
      */
-    public ItemBuilder inject(Inventory inventory){
-        inventory.addItem(toItemStack());
+    public FrameBuilder setJMenuBar(String name, String menuIcon, List<String> menuItemString, List<String> menuItemIcon){
+        JMenuBar jMenuBar = new JMenuBar();
+        JMenu menu = new JMenu(name);
+        if (!menuIcon.equalsIgnoreCase("null")) {
+            menu.setIcon(new ImageIcon(menuIcon));
+        }
+        Map<String, String> menuItemLogo = new HashMap<>();
+        for (int i = 0; i < menuItemString.size(); i++) {
+            menuItemLogo.put(menuItemString.get(i), menuItemIcon.get(i));
+        }
+        
+        for (Map.Entry<String, String> entry : menuItemLogo.entrySet()) {
+            JMenuItem jMenuItem = new JMenuItem(entry.getKey());
+            if (!entry.getValue().equalsIgnoreCase("null")){
+                jMenuItem.setIcon(new ImageIcon(entry.getValue()));
+            }
+            menu.add(jMenuItem);
+        }
+        jMenuBar.add(menu);
+        jFrame.setJMenuBar(jMenuBar);
         return this;
     }
 
     /**
-     * Inject item in inventory
-     * @param position
+     * get x size of the frame
      * @return
      */
-    public ItemBuilder inject(int position){
-        inventory.setItem(position, toItemStack());
+    public int getXSize(){
+        return jFrame.getSize().width;
+    }
+
+    /**
+     * get z size of the frame
+     * @return
+     */
+    public int getZSize(){
+        return jFrame.getSize().height;
+    }
+
+    /**
+     * Open the frame to the user
+     */
+    public FrameBuilder visible(boolean b){
+        jFrame.setVisible(b);
         return this;
     }
 
     /**
-     * Inject item in inventory
+     * return you JFrame
      * @return
      */
-    public ItemBuilder inject(){
-        this.inventory.addItem(toItemStack());
-        return this;
+    public JFrame toJFrame(){
+        return this.jFrame;
     }
 
-    /**
-     * Open inventory to the player
-     * @param player
-     */
-    public void open(Player player){
-        player.openInventory(inventory);
-    }
-
-    /**
-     * build item
-     * @return
-     */
-    public ItemStack toItemStack(){
-        return itemStack;
-    }
 }
