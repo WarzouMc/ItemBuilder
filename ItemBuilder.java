@@ -2,6 +2,7 @@ package fr.WarzouMc.SkyExpanderInternalPlugin.utils.graphics.itemBuilder;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
@@ -10,11 +11,11 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * <i>Just open ItemBuilder</i>
@@ -29,6 +30,8 @@ public class ItemBuilder {
     private ItemStack itemStack;
     private ItemMeta itemMeta;
     private SkullMeta skullMeta;
+
+    private int position = -1;
 
     /**
      * init ItemBuilder
@@ -55,6 +58,57 @@ public class ItemBuilder {
      */
     public ItemBuilder(Material material, int amount, int data) {
         this.itemStack = new ItemStack(material, amount, (byte)data);
+        this.itemMeta = itemStack.getItemMeta();
+    }
+
+    /**
+     * init ItemBuilder from his json object
+     * @param jsonObject
+     */
+    public ItemBuilder(JSONObject jsonObject) {
+        Material material = jsonObject.containsKey("m") ? (Material) jsonObject.get("m") : Material.AIR;
+        int amount = jsonObject.containsKey("a") ? (int) jsonObject.get("a") : 1;
+        int data = jsonObject.containsKey("id") ? (int) jsonObject.get("id") : 0;
+
+        this.itemStack = new ItemStack(material, amount, (byte)data);
+
+        short durability = jsonObject.containsKey("d") ? (short) jsonObject.get("d") : itemStack.getDurability();
+        setDurability(durability);
+        this.itemMeta = itemStack.getItemMeta();
+
+        if (jsonObject.containsKey("d_")){
+            setName(c_S((String) jsonObject.get("d_")));
+        }
+
+        if (jsonObject.containsKey("l")){
+            JSONArray jsonArray = (JSONArray) jsonObject.get("l");
+            List<String> lore = jsonArray;
+            List<String> setLore = new ArrayList<>();
+            for (String string : lore) {
+                setLore.add(c_S(string));
+            }
+            addLore(setLore);
+        }
+
+        if (jsonObject.containsKey("enchants")){
+            JSONObject enchants = (JSONObject) jsonObject.get("enchants");
+            JSONArray enchantsK = (JSONArray) enchants.get("k_");
+            JSONArray enchantsV = (JSONArray) enchants.get("v_");
+            Map<Enchantment, Integer> enchantment = new HashMap<>();
+            for (int i = 0; i < enchantsK.size(); i++) {
+                enchantment.put(Enchantment.getByName((String) enchantsK.get(i)), (Integer) enchantsV.get(i));
+            }
+            setEnchants(enchantment);
+        }
+
+        if (jsonObject.containsKey("i")){
+            JSONArray jsonArray = (JSONArray) jsonObject.get("i");
+            jsonArray.forEach(o -> addItemFlag(ItemFlag.valueOf((String) o)));
+        }
+
+        if (jsonObject.containsKey("p")){
+            this.position = (int) jsonObject.get("p");
+        }
     }
 
     /**
@@ -63,6 +117,7 @@ public class ItemBuilder {
      */
     public ItemBuilder(ItemStack itemStack){
         this.itemStack = itemStack;
+        this.itemMeta = itemStack.getItemMeta();
     }
 
     /**
@@ -117,12 +172,12 @@ public class ItemBuilder {
 
     /**
      * set the display name of the item
-     * @param var1
+     * @param name
      * @return
      */
-    public ItemBuilder setName(String var1){
+    public ItemBuilder setName(String name){
         ItemMeta itemMeta = itemStack.getItemMeta();
-        itemMeta.setDisplayName(var1);
+        itemMeta.setDisplayName(name);
         itemStack.setItemMeta(itemMeta);
         return this;
     }
@@ -159,6 +214,43 @@ public class ItemBuilder {
     public ItemBuilder addEnchantment(Enchantment enchantment, int value, boolean b){
         ItemMeta itemMeta = this.itemStack.getItemMeta();
         itemMeta.addEnchant(enchantment, value, b);
+        itemStack.setItemMeta(itemMeta);
+        return this;
+    }
+
+    /**
+     * add enchants from map (use for json object)
+     * @param enchantment
+     * @return
+     */
+    public ItemBuilder setEnchants(Map<Enchantment, Integer> enchantment){
+        for (Map.Entry<Enchantment, Integer> entry : enchantment.entrySet()) {
+            Enchantment enchant = entry.getKey();
+            addEnchantment(enchant, entry.getValue(), entry.getValue() > enchant.getMaxLevel());
+        }
+        return this;
+    }
+
+    /**
+     * add ItemFlag on your item
+     * @param itemFlag
+     * @return
+     */
+    public ItemBuilder addItemFlag(ItemFlag itemFlag){
+        ItemMeta itemMeta = this.itemStack.getItemMeta();
+        itemMeta.addItemFlags(itemFlag);
+        itemStack.setItemMeta(itemMeta);
+        return this;
+    }
+
+    /**
+     * remove ItemFlag on your item
+     * @param itemFlag
+     * @return
+     */
+    public ItemBuilder removeItemFlag(ItemFlag itemFlag){
+        ItemMeta itemMeta = this.itemStack.getItemMeta();
+        itemMeta.removeItemFlags(itemFlag);
         itemStack.setItemMeta(itemMeta);
         return this;
     }
@@ -267,10 +359,157 @@ public class ItemBuilder {
     }
 
     /**
+     * get position
+     * @return
+     */
+    public int getPosition(){
+        return this.position;
+    }
+
+    /**
      * build item
      * @return
      */
     public ItemStack toItemStack(){
         return itemStack;
+    }
+
+    /**
+     * get type
+     * @return
+     */
+    public Material getMaterial(){
+        return itemStack.getType();
+    }
+
+    /**
+     * get amount
+     * @return
+     */
+    public int getAmount(){
+        return itemStack.getAmount();
+    }
+
+    /**
+     * get data
+     * @return
+     */
+    public int getData(){
+        return itemStack.getData().getData();
+    }
+
+    /**
+     * get durability
+     * @return
+     */
+    public short getDurability(){
+        return itemStack.getDurability();
+    }
+
+    /**
+     * get item meta
+     * @return
+     */
+    public ItemMeta getItemMeta(){
+        return itemMeta;
+    }
+
+    /**
+     * get display name
+     * @return
+     */
+    public String getDisplayName(){
+        return itemStack.hasItemMeta() && itemMeta.hasDisplayName() ? itemMeta.getDisplayName() : null;
+    }
+
+    /**
+     * get enchant
+     * @return
+     */
+    public Map<Enchantment, Integer> getEnchantments(){
+        return itemStack.hasItemMeta() && itemMeta.hasEnchants() ? itemMeta.getEnchants() : null;
+    }
+
+    /**
+     * get lore
+     * @return
+     */
+    public List<String> getLore(){
+        return itemStack.hasItemMeta() && itemMeta.hasLore() ? itemMeta.getLore() : null;
+    }
+
+    /**
+     * get item flag
+     * @return
+     */
+    public Set<ItemFlag> getItemFlag(){
+        return itemStack.hasItemMeta() && itemMeta.getItemFlags().size() > 0 ? itemMeta.getItemFlags() : null;
+    }
+
+    /**
+     * parse in json object
+     * @param savePosition
+     * @return
+     */
+    @SuppressWarnings("uncheked")
+    public JSONObject toJSONObject(int savePosition){
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("m", getMaterial());
+        jsonObject.put("a", getAmount());
+        jsonObject.put("id", getData());
+        jsonObject.put("d", getDurability());
+        if (getDisplayName() != null) jsonObject.put("d_", s_C(getDisplayName()));
+
+        if (getEnchantments() != null){
+            JSONObject enchants = new JSONObject();
+            JSONArray enchantsK = new JSONArray();
+            JSONArray enchantsV = new JSONArray();
+
+            getEnchantments().forEach((enchantment, integer) -> {
+                enchantsK.add(enchantment.getName());
+                enchantsV.add(integer);
+            });
+            enchants.put("k_", enchantsK);
+            enchants.put("v_", enchantsV);
+            jsonObject.put("enchants", enchants);
+        }
+
+        if (getLore() != null) {
+            JSONArray lores = new JSONArray();
+            for (String s : getLore()) {
+                lores.add(s_C(s));
+            }
+
+            jsonObject.put("l", lores);
+        }
+
+        if (getItemFlag() != null) {
+            JSONArray itemFlag = new JSONArray();
+
+            for (ItemFlag itemFlag1 : getItemFlag()) {
+                itemFlag.add(itemFlag1.name());
+            }
+
+            jsonObject.put("i", itemFlag);
+        }
+
+        if (savePosition > -1) jsonObject.put("p", savePosition);
+        return jsonObject;
+    }
+
+    /**
+     * @param string
+     * @return
+     */
+    private String s_C(String string){
+        return string.replace("§", "&");
+    }
+
+    /**
+     * @param string
+     * @return
+     */
+    private String c_S(String string){
+        return ChatColor.translateAlternateColorCodes('&', string);
     }
 }
