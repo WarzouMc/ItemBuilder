@@ -93,7 +93,8 @@ public class ItemBuilder {
             JSONArray enchantsV = (JSONArray) enchants.get("v_");
             Map<Enchantment, Integer> enchantment = new HashMap<>();
             for (int i = 0; i < enchantsK.size(); i++) {
-                enchantment.put(Enchantment.getByName((String) enchantsK.get(i)), (Integer) enchantsV.get(i));
+                long v = (long) enchantsV.get(i);
+                enchantment.put(Enchantment.getByName((String) enchantsK.get(i)), (int) v);
             }
             setEnchants(enchantment);
         }
