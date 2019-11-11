@@ -31,7 +31,7 @@ public class ItemBuilder {
     private ItemMeta itemMeta;
     private SkullMeta skullMeta;
 
-    private int position = -1;
+    private long position = -1;
 
     /**
      * init ItemBuilder
@@ -66,14 +66,11 @@ public class ItemBuilder {
      * @param jsonObject
      */
     public ItemBuilder(JSONObject jsonObject) {
-        Material material = jsonObject.containsKey("m") ? (Material) jsonObject.get("m") : Material.AIR;
-        int amount = jsonObject.containsKey("a") ? (int) jsonObject.get("a") : 1;
-        int data = jsonObject.containsKey("id") ? (int) jsonObject.get("id") : 0;
+        Material material = jsonObject.containsKey("m") ? Material.valueOf((String) jsonObject.get("m")) : Material.AIR;
+        long amount = jsonObject.containsKey("a") ? (long) jsonObject.get("a") : 1;
+        long data = jsonObject.containsKey("id") ? (long) jsonObject.get("id") : 0;
 
-        this.itemStack = new ItemStack(material, amount, (byte)data);
-
-        short durability = jsonObject.containsKey("d") ? (short) jsonObject.get("d") : itemStack.getDurability();
-        setDurability(durability);
+        this.itemStack = new ItemStack(material, (int) amount, (byte)data);
         this.itemMeta = itemStack.getItemMeta();
 
         if (jsonObject.containsKey("d_")){
@@ -107,7 +104,7 @@ public class ItemBuilder {
         }
 
         if (jsonObject.containsKey("p")){
-            this.position = (int) jsonObject.get("p");
+            this.position = (long) jsonObject.get("p");
         }
     }
 
@@ -362,7 +359,7 @@ public class ItemBuilder {
      * get position
      * @return
      */
-    public int getPosition(){
+    public long getPosition(){
         return this.position;
     }
 
@@ -396,14 +393,6 @@ public class ItemBuilder {
      */
     public int getData(){
         return itemStack.getData().getData();
-    }
-
-    /**
-     * get durability
-     * @return
-     */
-    public short getDurability(){
-        return itemStack.getDurability();
     }
 
     /**
@@ -457,7 +446,6 @@ public class ItemBuilder {
         jsonObject.put("m", getMaterial());
         jsonObject.put("a", getAmount());
         jsonObject.put("id", getData());
-        jsonObject.put("d", getDurability());
         if (getDisplayName() != null) jsonObject.put("d_", s_C(getDisplayName()));
 
         if (getEnchantments() != null){
