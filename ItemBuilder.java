@@ -1,5 +1,3 @@
-package fr.WarzouMc.SkyExpanderInternalPlugin.utils.graphics.itemBuilder;
-
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import org.bukkit.ChatColor;
@@ -32,6 +30,13 @@ public class ItemBuilder {
     private SkullMeta skullMeta;
 
     private long position = -1;
+
+    /**
+     * init ItemBuilder without argument
+     */
+    public ItemBuilder(){
+        this(Material.AIR);
+    }
 
     /**
      * init ItemBuilder
@@ -72,6 +77,10 @@ public class ItemBuilder {
 
         this.itemStack = new ItemStack(material, (int) amount, (byte)data);
         this.itemMeta = itemStack.getItemMeta();
+
+        long durability = jsonObject.containsKey("d") ? (long) jsonObject.get("d") : -1;
+
+        setNewDurability((int)durability);
 
         if (jsonObject.containsKey("d_")){
             setName(c_S((String) jsonObject.get("d_")));
@@ -291,6 +300,35 @@ public class ItemBuilder {
         return this;
     }
 
+    /**
+     * Set durrability of item
+     * @param durability
+     * @return
+     */
+    public ItemBuilder setNewDurability(int durability){
+        itemStack.setDurability((short)durability);
+        return this;
+    }
+
+    /**
+     * If your item is a player skull you can apply a special player skull texture
+     * @param player
+     * @return
+     */
+    public ItemBuilder setSkullTexture(Player player){
+        this.skullMeta = (SkullMeta) itemStack.getItemMeta();
+        skullMeta.setOwner(player.getName());
+        itemStack.setItemMeta(skullMeta);
+        return this;
+    }
+
+    /**
+     * If your item is a player skull you can apply a texture
+     * value is the base64 value of the skull texture
+     * You can find the value on https://minecraft-heads.com
+     * @param value
+     * @return
+     */
     public ItemBuilder setSkullTexture(String value){
         this.skullMeta = (SkullMeta) itemStack.getItemMeta();
         GameProfile gameProfile = new GameProfile(UUID.randomUUID(), null);
@@ -397,6 +435,14 @@ public class ItemBuilder {
     }
 
     /**
+     * get durability
+     * @return
+     */
+    public int getDurability(){
+        return itemStack.getDurability();
+    }
+
+    /**
      * get item meta
      * @return
      */
@@ -447,6 +493,7 @@ public class ItemBuilder {
         jsonObject.put("m", getMaterial());
         jsonObject.put("a", getAmount());
         jsonObject.put("id", getData());
+        jsonObject.put("d", getDurability());
         if (getDisplayName() != null) jsonObject.put("d_", s_C(getDisplayName()));
 
         if (getEnchantments() != null){
