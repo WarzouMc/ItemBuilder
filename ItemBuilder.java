@@ -142,6 +142,16 @@ public class ItemBuilder {
     }
 
     /**
+     * @param unbreakable
+     * Set item in unbreakable/breakable
+     * @return
+     */
+    public ItemBuilder setUnbreakable(boolean unbreakable){
+        this.itemMeta.spigot().setUnbreakable(unbreakable);
+        return this;
+    }
+
+    /**
      * set the display name of the item
      * @param name
      * @return
@@ -410,7 +420,7 @@ public class ItemBuilder {
     public boolean isExactlySame(ItemBuilder itemBuilder){
         return hasSameMaterial(itemBuilder) && hasSameData(itemBuilder) && hasSameDisplayName(itemBuilder)
                 && hasSameAmount(itemBuilder) && hasSameDurability(itemBuilder) && hasSameEnchantment(itemBuilder)
-                && hasSameItemFlag(itemBuilder) && hasSameLore(itemBuilder);
+                && hasSameItemFlag(itemBuilder) && hasSameLore(itemBuilder) && hasSameBreakableStat(itemBuilder);
     }
 
     /**
@@ -486,6 +496,15 @@ public class ItemBuilder {
     }
 
     /**
+     * @param itemBuilder
+     * returns if two item builder has same breakable stat
+     * @return
+     */
+    public boolean hasSameBreakableStat(ItemBuilder itemBuilder){
+        return isUnbreakable() == itemBuilder.isUnbreakable();
+    }
+
+    /**
      * get type
      * @return
      */
@@ -558,6 +577,14 @@ public class ItemBuilder {
     }
 
     /**
+     * get if item is or isn't unbreakable
+     * @return
+     */
+    public boolean isUnbreakable(){
+        return itemStack.hasItemMeta() && itemMeta.spigot().isUnbreakable();
+    }
+
+    /**
      * parse in json object
      * @param savePositionInInventory
      * @return
@@ -569,6 +596,10 @@ public class ItemBuilder {
         return jsonObject;
     }
 
+    /**
+     * parse in json object without associate position
+     * @return
+     */
     @SuppressWarnings("unchecked")
     public JSONObject toJSONObject(){
         JSONObject jsonObject = new JSONObject();
