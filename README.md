@@ -1,6 +1,6 @@
 ItemBuilder class is a java class for Spigot API (for minecraft plugin).
 
-This class is not finish, I add methode is I need it.
+This class is not finish, I add methods if I need it.
 
 For create Item you can call the class "ItemBuilder" : new ItemBuilder.
 In parametre you can put Material or Material material, int amount or Material material, int amount, int data.
