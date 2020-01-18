@@ -9,14 +9,16 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import java.lang.reflect.Field;
 import java.util.*;
 
 /**
+ * This version of ItemBuilder is not complete and need someone method.
+ * So the java doc isn't available.
  * <i>Just open ItemBuilder</i>
+ * @version 0.1.3
  * @author WarzouMc
  */
 public class ItemBuilder {
@@ -29,7 +31,7 @@ public class ItemBuilder {
     private ItemMeta itemMeta;
     private SkullMeta skullMeta;
 
-    private long position = -1;
+    private double position = -1;
 
     /**
      * init ItemBuilder without argument
@@ -71,51 +73,13 @@ public class ItemBuilder {
      * @param jsonObject
      */
     public ItemBuilder(JSONObject jsonObject) {
-        Material material = jsonObject.containsKey("m") ? Material.valueOf((String) jsonObject.get("m")) : Material.AIR;
-        long amount = jsonObject.containsKey("a") ? (long) jsonObject.get("a") : 1;
-        long data = jsonObject.containsKey("id") ? (long) jsonObject.get("id") : 0;
-
-        this.itemStack = new ItemStack(material, (int) amount, (byte)data);
-        this.itemMeta = itemStack.getItemMeta();
-
-        long durability = jsonObject.containsKey("d") ? (long) jsonObject.get("d") : -1;
-
-        setNewDurability((int)durability);
-
-        if (jsonObject.containsKey("d_")){
-            setName(c_S((String) jsonObject.get("d_")));
-        }
-
-        if (jsonObject.containsKey("l")){
-            JSONArray jsonArray = (JSONArray) jsonObject.get("l");
-            List<String> lore = jsonArray;
-            List<String> setLore = new ArrayList<>();
-            for (String string : lore) {
-                setLore.add(c_S(string));
-            }
-            addLore(setLore);
-        }
-
-        if (jsonObject.containsKey("enchants")){
-            JSONObject enchants = (JSONObject) jsonObject.get("enchants");
-            JSONArray enchantsK = (JSONArray) enchants.get("k_");
-            JSONArray enchantsV = (JSONArray) enchants.get("v_");
-            Map<Enchantment, Integer> enchantment = new HashMap<>();
-            for (int i = 0; i < enchantsK.size(); i++) {
-                long v = (long) enchantsV.get(i);
-                enchantment.put(Enchantment.getByName((String) enchantsK.get(i)), (int) v);
-            }
-            setEnchants(enchantment);
-        }
-
-        if (jsonObject.containsKey("i")){
-            JSONArray jsonArray = (JSONArray) jsonObject.get("i");
-            jsonArray.forEach(o -> addItemFlag(ItemFlag.valueOf((String) o)));
-        }
-
+        Object object = jsonObject.get("serialized");
+        Map<String, Object> map = (Map<String, Object>) object;
         if (jsonObject.containsKey("p")){
-            this.position = (long) jsonObject.get("p");
+            this.position = (double) jsonObject.get("p");
         }
+        this.itemStack = ItemStack.deserialize(map);
+        this.itemMeta = itemStack.getItemMeta();
     }
 
     /**
@@ -186,6 +150,7 @@ public class ItemBuilder {
         ItemMeta itemMeta = itemStack.getItemMeta();
         itemMeta.setDisplayName(name);
         itemStack.setItemMeta(itemMeta);
+        this.itemMeta = itemMeta;
         return this;
     }
 
@@ -198,6 +163,7 @@ public class ItemBuilder {
         ItemMeta itemMeta = itemStack.getItemMeta();
         itemMeta.setLore(lores);
         itemStack.setItemMeta(itemMeta);
+        this.itemMeta = itemMeta;
         return this;
     }
 
@@ -222,6 +188,7 @@ public class ItemBuilder {
         ItemMeta itemMeta = this.itemStack.getItemMeta();
         itemMeta.addEnchant(enchantment, value, b);
         itemStack.setItemMeta(itemMeta);
+        this.itemMeta = itemMeta;
         return this;
     }
 
@@ -247,6 +214,7 @@ public class ItemBuilder {
         ItemMeta itemMeta = this.itemStack.getItemMeta();
         itemMeta.addItemFlags(itemFlag);
         itemStack.setItemMeta(itemMeta);
+        this.itemMeta = itemMeta;
         return this;
     }
 
@@ -259,6 +227,7 @@ public class ItemBuilder {
         ItemMeta itemMeta = this.itemStack.getItemMeta();
         itemMeta.removeItemFlags(itemFlag);
         itemStack.setItemMeta(itemMeta);
+        this.itemMeta = itemMeta;
         return this;
     }
 
@@ -266,10 +235,11 @@ public class ItemBuilder {
      * hide enchant
      * @return
      */
-    public ItemBuilder hideEnchante(){
+    public ItemBuilder hideEnchant(){
         ItemMeta itemMeta = this.itemStack.getItemMeta();
         itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
         itemStack.setItemMeta(itemMeta);
+        this.itemMeta = itemMeta;
         return this;
     }
 
@@ -281,6 +251,7 @@ public class ItemBuilder {
         ItemMeta itemMeta = this.itemStack.getItemMeta();
         itemMeta.removeItemFlags(ItemFlag.HIDE_ENCHANTS);
         itemStack.setItemMeta(itemMeta);
+        this.itemMeta = itemMeta;
         return this;
     }
 
@@ -312,13 +283,23 @@ public class ItemBuilder {
 
     /**
      * If your item is a player skull you can apply a special player skull texture
+     * @param playerName
+     * @return
+     */
+    public ItemBuilder setSkullTextureFromePlayerName(String playerName){
+        this.skullMeta = (SkullMeta) itemStack.getItemMeta();
+        this.skullMeta.setOwner(playerName);
+        itemStack.setItemMeta(skullMeta);
+        return this;
+    }
+
+    /**
+     * If your item is a player skull you can apply a special player skull texture
      * @param player
      * @return
      */
     public ItemBuilder setSkullTexture(Player player){
-        this.skullMeta = (SkullMeta) itemStack.getItemMeta();
-        skullMeta.setOwner(player.getName());
-        itemStack.setItemMeta(skullMeta);
+        setSkullTextureFromePlayerName(player.getName());
         return this;
     }
 
@@ -399,7 +380,7 @@ public class ItemBuilder {
      * @return
      */
     public long getPosition(){
-        return this.position;
+        return (long) this.position;
     }
 
     /**
@@ -408,6 +389,100 @@ public class ItemBuilder {
      */
     public ItemStack toItemStack(){
         return itemStack;
+    }
+
+    /**
+     * @param itemBuilder
+     * returns if two item builder are similar
+     * This method compare type, data, and display name of items
+     * @return
+     */
+    public boolean isSimilar(ItemBuilder itemBuilder){
+        return hasSameMaterial(itemBuilder) && hasSameData(itemBuilder) && hasSameDisplayName(itemBuilder);
+    }
+
+    /**
+     * @param itemBuilder
+     * returns if two item builder are exactly same
+     * This method compare all parameter of items
+     * @return
+     */
+    public boolean isExactlySame(ItemBuilder itemBuilder){
+        return hasSameMaterial(itemBuilder) && hasSameData(itemBuilder) && hasSameDisplayName(itemBuilder)
+                && hasSameAmount(itemBuilder) && hasSameDurability(itemBuilder) && hasSameEnchantment(itemBuilder)
+                && hasSameItemFlag(itemBuilder) && hasSameLore(itemBuilder);
+    }
+
+    /**
+     * @param itemBuilder
+     * returns if two item builder has same type
+     * @return
+     */
+    public boolean hasSameMaterial(ItemBuilder itemBuilder){
+        return getMaterial() == itemBuilder.getMaterial();
+    }
+
+    /**
+     * @param itemBuilder
+     * returns if two item builder has same display name
+     * @return
+     */
+    public boolean hasSameDisplayName(ItemBuilder itemBuilder){
+        return getDisplayName().equalsIgnoreCase(itemBuilder.getDisplayName());
+    }
+
+    /**
+     * @param itemBuilder
+     * returns if two item builder has same enchantments
+     * @return
+     */
+    public boolean hasSameEnchantment(ItemBuilder itemBuilder){
+        return getEnchantments().equals(itemBuilder.getEnchantments());
+    }
+
+    /**
+     * @param itemBuilder
+     * returns if two item builder has same item flags
+     * @return
+     */
+    public boolean hasSameItemFlag(ItemBuilder itemBuilder){
+        return getItemFlag().equals(itemBuilder.getItemFlag());
+    }
+
+    /**
+     * @param itemBuilder
+     * returns if two item builder has same lore
+     * @return
+     */
+    public boolean hasSameLore(ItemBuilder itemBuilder){
+        return getLore().equals(itemBuilder.getLore());
+    }
+
+    /**
+     * @param itemBuilder
+     * returns if two item builder has same data
+     * @return
+     */
+    public boolean hasSameData(ItemBuilder itemBuilder){
+        return getData() == itemBuilder.getData();
+    }
+
+    /**
+     * @param itemBuilder
+     * returns if two item builder has same amount
+     * @return
+     */
+    public boolean hasSameAmount(ItemBuilder itemBuilder){
+        return getAmount() == itemBuilder.getAmount();
+    }
+
+    /**
+     * @param itemBuilder
+     * returns if two item builder has same durability
+     * @return
+     */
+    public boolean hasSameDurability(ItemBuilder itemBuilder){
+        return getDurability() == itemBuilder.getDurability();
     }
 
     /**
@@ -471,7 +546,7 @@ public class ItemBuilder {
      * @return
      */
     public List<String> getLore(){
-        return itemStack.hasItemMeta() && itemMeta.hasLore() ? itemMeta.getLore() : null;
+        return itemStack.hasItemMeta() && itemMeta.hasLore() ? itemMeta.getLore() : Collections.singletonList("");
     }
 
     /**
@@ -484,52 +559,21 @@ public class ItemBuilder {
 
     /**
      * parse in json object
-     * @param savePosition
+     * @param savePositionInInventory
      * @return
      */
     @SuppressWarnings("uncheked")
-    public JSONObject toJSONObject(int savePosition){
+    public JSONObject toJSONObject(int savePositionInInventory){
+        JSONObject jsonObject = toJSONObject();
+        if (savePositionInInventory > -1) jsonObject.put("p", savePositionInInventory + 0.0);
+        return jsonObject;
+    }
+
+    @SuppressWarnings("unchecked")
+    public JSONObject toJSONObject(){
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put("m", getMaterial());
-        jsonObject.put("a", getAmount());
-        jsonObject.put("id", getData());
-        jsonObject.put("d", getDurability());
-        if (getDisplayName() != null) jsonObject.put("d_", s_C(getDisplayName()));
-
-        if (getEnchantments() != null){
-            JSONObject enchants = new JSONObject();
-            JSONArray enchantsK = new JSONArray();
-            JSONArray enchantsV = new JSONArray();
-
-            getEnchantments().forEach((enchantment, integer) -> {
-                enchantsK.add(enchantment.getName());
-                enchantsV.add(integer);
-            });
-            enchants.put("k_", enchantsK);
-            enchants.put("v_", enchantsV);
-            jsonObject.put("enchants", enchants);
-        }
-
-        if (getLore() != null) {
-            JSONArray lores = new JSONArray();
-            for (String s : getLore()) {
-                lores.add(s_C(s));
-            }
-
-            jsonObject.put("l", lores);
-        }
-
-        if (getItemFlag() != null) {
-            JSONArray itemFlag = new JSONArray();
-
-            for (ItemFlag itemFlag1 : getItemFlag()) {
-                itemFlag.add(itemFlag1.name());
-            }
-
-            jsonObject.put("i", itemFlag);
-        }
-
-        if (savePosition > -1) jsonObject.put("p", savePosition);
+        Map<String, Object> map = this.itemStack.serialize();
+        jsonObject.put("serialized", map);
         return jsonObject;
     }
 
