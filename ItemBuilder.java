@@ -73,13 +73,10 @@ public class ItemBuilder {
      * @param jsonObject
      */
     public ItemBuilder(JSONObject jsonObject) {
-        Object object = jsonObject.get("serialized");
-        Map<String, Object> map = (Map<String, Object>) object;
-        if (jsonObject.containsKey("p")){
-            this.position = (double) jsonObject.get("p");
-        }
-        this.itemStack = ItemStack.deserialize(map);
+        String string = jsonObject.get("serialized").toString();
+        this.itemStack = fromString(string).toItemStack();
         this.itemMeta = itemStack.getItemMeta();
+        this.position = fromString(string).getPosition();
     }
 
     /**
@@ -147,6 +144,11 @@ public class ItemBuilder {
      * @return
      */
     public ItemBuilder setUnbreakable(boolean unbreakable){
+        if (this.itemMeta == null) {
+            if (this.itemStack == null)
+                return null;
+            this.itemMeta = this.itemStack.getItemMeta();
+        }
         this.itemMeta.spigot().setUnbreakable(unbreakable);
         return this;
     }
@@ -225,6 +227,29 @@ public class ItemBuilder {
         itemMeta.addItemFlags(itemFlag);
         itemStack.setItemMeta(itemMeta);
         this.itemMeta = itemMeta;
+        return this;
+    }
+
+    /**
+     * add ItemFlags on your item
+     * @param itemFlag
+     * @return
+     */
+    public ItemBuilder addItemFlag(ItemFlag... itemFlag){
+        ItemMeta itemMeta = this.itemStack.getItemMeta();
+        itemMeta.addItemFlags(itemFlag);
+        itemStack.setItemMeta(itemMeta);
+        this.itemMeta = itemMeta;
+        return this;
+    }
+
+    /**
+     * add ItemFlags on your item from ItemFlag list
+     * @param itemFlag
+     * @return
+     */
+    public ItemBuilder addItemFlag(List<ItemFlag> itemFlag){
+        itemFlag.forEach(this::addItemFlag);
         return this;
     }
 
@@ -386,6 +411,16 @@ public class ItemBuilder {
     }
 
     /**
+     * Set the position of the item
+     * @param position
+     * @return
+     */
+    public ItemBuilder setPosition(int position) {
+        this.position = position;
+        return this;
+    }
+
+    /**
      * get position
      * @return
      */
@@ -465,6 +500,8 @@ public class ItemBuilder {
      * @return
      */
     public boolean hasSameLore(ItemBuilder itemBuilder){
+        if (getLore() == null)
+            return false;
         return getLore().equals(itemBuilder.getLore());
     }
 
@@ -565,7 +602,7 @@ public class ItemBuilder {
      * @return
      */
     public List<String> getLore(){
-        return itemStack.hasItemMeta() && itemMeta.hasLore() ? itemMeta.getLore() : Collections.singletonList("");
+        return itemStack.hasItemMeta() && itemMeta.hasLore() ? itemMeta.getLore() : null;
     }
 
     /**
@@ -585,34 +622,177 @@ public class ItemBuilder {
     }
 
     /**
-     * parse in json object
-     * @param savePositionInInventory
-     * @return
-     */
-    @SuppressWarnings("uncheked")
-    public JSONObject toJSONObject(int savePositionInInventory){
-        JSONObject jsonObject = toJSONObject();
-        if (savePositionInInventory > -1) jsonObject.put("p", savePositionInInventory + 0.0);
-        return jsonObject;
-    }
-
-    /**
      * parse in json object without associate position
      * @return
      */
     @SuppressWarnings("unchecked")
     public JSONObject toJSONObject(){
         JSONObject jsonObject = new JSONObject();
-        Map<String, Object> map = this.itemStack.serialize();
-        jsonObject.put("serialized", map);
+        jsonObject.put("serialized", toString());
         return jsonObject;
+    }
+
+    /**
+     * Convert ItemBuilder variable into a String
+     * @return
+     */
+    public String toString() {
+        String[] splitValues = new String[] {"{^}", "[^]", "`SECTION_TYPE`", "|", ","};
+        StringBuilder itemBuilderString = new StringBuilder();
+        itemBuilderString.append("item: ").append(splitValues[2]).append(splitValues[1])
+                .append("type: ").append(getMaterial()).append(splitValues[1])
+                .append("data: ").append(getData()).append(splitValues[1])
+                .append("amount: ").append(getAmount()).append(splitValues[1])
+                .append("durability: ").append(getDurability()).append(splitValues[1])
+                .append("unbreakable: ").append(isUnbreakable()).append(splitValues[1])
+                .append(splitValues[0]);
+        itemBuilderString.append("other: ").append(splitValues[2]).append(splitValues[1]);
+        itemBuilderString.append("position: ").append(getPosition()).append(splitValues[1]);
+        itemBuilderString.append(splitValues[0]);
+        if (this.itemStack.hasItemMeta()) {
+            itemBuilderString.append("meta: ").append(splitValues[2]).append(splitValues[1]);
+            if (getDisplayName() != null)
+                itemBuilderString.append("name: ").append(getDisplayName()).append(splitValues[1]);
+            if (getEnchantments() != null) {
+                itemBuilderString.append("enchants: ");
+                getEnchantments().forEach((enchantment, integer) -> itemBuilderString.append("enchantType: ")
+                        .append(enchantment.getName()).append(splitValues[4])
+                        .append("enchantLevel: ").append(integer)
+                        .append(splitValues[4]).append(splitValues[3]));
+                itemBuilderString.append(splitValues[1]);
+            }
+            if (getLore() != null) {
+                itemBuilderString.append("lores: ");
+                getLore().forEach(s -> itemBuilderString.append("lore: ").append(uncoloredString(s)).append(splitValues[3]));
+                itemBuilderString.append(splitValues[1]);
+            }
+            if (getItemFlag() != null) {
+                itemBuilderString.append("itemFlags: ");
+                getItemFlag().forEach(s -> itemBuilderString.append("itemflag: ").append(s).append(splitValues[3]));
+                itemBuilderString.append(splitValues[1]);
+            }
+            itemBuilderString.append(splitValues[0]);
+        }
+
+        return itemBuilderString.toString();
+    }
+
+    /**
+     * Convert string variable into an ItemBuilder
+     * @param string
+     * @return
+     */
+    public ItemBuilder fromString(String string){
+        String[] splitValues = new String[] {"\\{\\^}", "\\[\\^]", "`SECTION_TYPE`", "\\|", ","};
+        ItemBuilder itemBuilder = new ItemBuilder();
+        String[] sections = string.split(splitValues[0]);
+        if (sections.length == 0 || Arrays.stream(sections).filter(s -> s.split(splitValues[2])[0]
+                .equalsIgnoreCase("item: ")).count() != 1)
+            return itemBuilder;
+        String[] sectionType = sections[0].split(splitValues[2]);
+        String[] object = sections[0].split(splitValues[1]);
+        if (object.length < 6)
+            return itemBuilder;
+        itemSection(itemBuilder, sectionType, object);
+        if (sections.length == 1 || !sections[1].startsWith("other: "))
+            return itemBuilder;
+        sectionType = sections[1].split(splitValues[2]);
+        object = sections[1].split(splitValues[1]);
+        otherPropertySection(itemBuilder, sectionType, object);
+        if (sections.length == 2)
+            return itemBuilder;
+        sectionType = sections[2].split(splitValues[2]);
+        object = sections[2].split(splitValues[1]);
+        if (sectionType[0].equalsIgnoreCase("meta: "))
+            metaSection(itemBuilder, sectionType, object);
+        return itemBuilder;
+    }
+
+    /**
+     * This method returns the item
+     * @param itemBuilder
+     * @param sectionType
+     * @param object
+     */
+    private void itemSection(ItemBuilder itemBuilder, String[] sectionType, String[] object) {
+        Arrays.asList(object).forEach(s -> {
+            if (!s.equalsIgnoreCase(sectionType[0])){
+                if (s.startsWith("type: "))
+                    itemBuilder.setItem(Material.valueOf(s.replace("type: ", "")));
+                if (s.startsWith("data: "))
+                    itemBuilder.setData(Integer.parseInt(s.replace("data: ", "")));
+                if (s.startsWith("amount: "))
+                    itemBuilder.setAmount(Integer.parseInt(s.replace("amount: ", "")));
+                if (s.startsWith("durability: "))
+                    itemBuilder.setNewDurability(Integer.parseInt(s.replace("durability: ", "")));
+                if (s.startsWith("unbreakable: "))
+                    itemBuilder.setUnbreakable(Boolean.parseBoolean(s.replace("unbreakable: ", "")));
+            }
+        });
+    }
+
+    /**
+     * This method returns specific properties of item from of ItemBuilder
+     * @param itemBuilder
+     * @param sectionType
+     * @param object
+     */
+    private void otherPropertySection(ItemBuilder itemBuilder, String[] sectionType, String[] object) {
+        Arrays.asList(object).forEach(s -> {
+            if (!s.equalsIgnoreCase(sectionType[0])){
+                if (s.startsWith("position: ")){
+                    itemBuilder.setPosition(Integer.parseInt(s.replace("position: ", "")));
+                }
+            }
+        });
+    }
+
+    /**
+     * This method returns the meta of the item
+     * @param itemBuilder
+     * @param sectionType
+     * @param object
+     */
+    private void metaSection(ItemBuilder itemBuilder, String[] sectionType, String[] object) {
+        String[] splitValues = new String[] {"\\{\\^}", "\\[\\^]", "`SECTION_TYPE`", "\\|", ","};
+        Arrays.asList(object).forEach(s -> {
+            if (!s.equalsIgnoreCase(sectionType[0])){
+                if (s.startsWith("name: "))
+                    itemBuilder.setName(coloredString(s.replace("name: ", "")));
+                if (s.startsWith("enchants: ")){
+                    Map<Enchantment, Integer> enchantmentMap = new HashMap<>();
+                    String[] enchant = s.split(splitValues[3]);
+                    Arrays.asList(enchant).forEach(s1 -> {
+                        String[] enchantObject = s1.split(splitValues[4]);
+                        enchantmentMap.put(Enchantment.getByName(enchantObject[0].replace("enchants: ", "")
+                                        .replace("enchantType: ", "")),
+                                Integer.valueOf(enchantObject[1].replace("enchantLevel: ", "")));
+                    });
+                    itemBuilder.setEnchants(enchantmentMap);
+                }
+                if (s.startsWith("lores: ")) {
+                    String[] lores = s.split(splitValues[3]);
+                    List<String> loreList = new ArrayList<>();
+                    Arrays.asList(lores).forEach(s1 -> loreList.add(coloredString(s1)
+                            .replace("lores: ", "").replace("lore: ", "")));
+                    itemBuilder.addLore(loreList);
+                }
+                if (s.startsWith("itemFlags: ")) {
+                    String[] itemFlags = s.split(splitValues[3]);
+                    List<ItemFlag> itemFlagList = new ArrayList<>();
+                    Arrays.asList(itemFlags).forEach(s1 -> itemFlagList.add(ItemFlag.valueOf(s1.replace("itemFlags: ", "")
+                            .replace("itemflag: ", ""))));
+                    itemBuilder.addItemFlag(itemFlagList);
+                }
+            }
+        });
     }
 
     /**
      * @param string
      * @return
      */
-    private String s_C(String string){
+    private String uncoloredString(String string){
         return string.replace("§", "&");
     }
 
@@ -620,7 +800,8 @@ public class ItemBuilder {
      * @param string
      * @return
      */
-    private String c_S(String string){
+    private String coloredString(String string){
         return ChatColor.translateAlternateColorCodes('&', string);
     }
+
 }
