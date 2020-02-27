@@ -1,5 +1,6 @@
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -87,7 +88,7 @@ public class ItemBuilder {
     }
 
     /**
-     * init ItemBuiler
+     * init ItemBuilder
      * @param itemStack
      */
     public ItemBuilder(ItemStack itemStack){
@@ -258,6 +259,8 @@ public class ItemBuilder {
      * @return
      */
     public ItemBuilder clearEnchants() {
+        if (this.getEnchantments() == null)
+            return this;
         for (Enchantment enchantment : this.getEnchantments().keySet())
             this.removeEnchant(enchantment);
         return this;
@@ -767,7 +770,7 @@ public class ItemBuilder {
      * @return
      */
     public Map<Enchantment, Integer> getEnchantments(){
-        return itemStack.hasItemMeta() && itemMeta.hasEnchants() ? itemMeta.getEnchants() : null;
+        return this.itemStack.hasItemMeta() && this.itemMeta.hasEnchants() ? this.itemMeta.getEnchants() : null;
     }
 
     /**
