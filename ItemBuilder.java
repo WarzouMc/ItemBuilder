@@ -8,7 +8,12 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.potion.Potion;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.potion.PotionType;
 import org.json.simple.JSONObject;
 
 import java.lang.reflect.Field;
@@ -18,7 +23,8 @@ import java.util.*;
  * This version of ItemBuilder is not complete and need someone method.
  * So the java doc isn't available.
  * <i>Just open ItemBuilder</i>
- * @version 0.1.3
+ * <i>Json as been not update for potion meta and skull meta</i>
+ * @version 0.1.4 (not tested)
  * @author WarzouMc
  */
 public class ItemBuilder {
@@ -30,6 +36,7 @@ public class ItemBuilder {
     private ItemStack itemStack;
     private ItemMeta itemMeta;
     private SkullMeta skullMeta;
+    private PotionMeta potionMeta;
 
     private double position = -1;
 
@@ -193,13 +200,13 @@ public class ItemBuilder {
      * add enchant to the item
      * @param enchantment
      * @param value
-     * @param b
+     * @param ignoreLevelRestriction
      * @return
      */
-    public ItemBuilder addEnchantment(Enchantment enchantment, int value, boolean b){
+    public ItemBuilder addEnchantment(Enchantment enchantment, int value, boolean ignoreLevelRestriction){
         ItemMeta itemMeta = this.itemStack.getItemMeta();
-        itemMeta.addEnchant(enchantment, value, b);
-        itemStack.setItemMeta(itemMeta);
+        itemMeta.addEnchant(enchantment, value, ignoreLevelRestriction);
+        this.itemStack.setItemMeta(itemMeta);
         this.itemMeta = itemMeta;
         return this;
     }
@@ -214,6 +221,45 @@ public class ItemBuilder {
             Enchantment enchant = entry.getKey();
             addEnchantment(enchant, entry.getValue(), entry.getValue() > enchant.getMaxLevel());
         }
+        return this;
+    }
+
+    /**
+     * Remove an enchantment on the item
+     * @param enchantment
+     * @return
+     */
+    public ItemBuilder removeEnchant(Enchantment enchantment) {
+        if (!this.getEnchantments().containsKey(enchantment))
+            return this;
+        ItemMeta itemMeta = this.itemStack.getItemMeta();
+        itemMeta.removeEnchant(enchantment);
+        this.itemStack.setItemMeta(itemMeta);
+        this.itemMeta = itemMeta;
+        return this;
+    }
+
+    /**
+     * remove all enchant on item from a list
+     * @param enchantments
+     * @return
+     */
+    public ItemBuilder removeEnchants(List<Enchantment> enchantments){
+        for (Enchantment enchantment : enchantments) {
+            if (!this.getEnchantments().containsKey(enchantment))
+                continue;
+            this.removeEnchant(enchantment);
+        }
+        return this;
+    }
+
+    /**
+     * remove all enchantment on the item
+     * @return
+     */
+    public ItemBuilder clearEnchants() {
+        for (Enchantment enchantment : this.getEnchantments().keySet())
+            this.removeEnchant(enchantment);
         return this;
     }
 
@@ -359,6 +405,133 @@ public class ItemBuilder {
         }
 
         itemStack.setItemMeta(skullMeta);
+        return this;
+    }
+
+    /**
+     * apply potion effect type on the potion bottle
+     * @param potionEffectType
+     * @return
+     */
+    public ItemBuilder addPotionEffect(PotionEffectType potionEffectType) {
+        addPotionEffect(potionEffectType, 10);
+        return this;
+    }
+
+    /**
+     * apply potion effect type with duration on the potion bottle
+     * @param potionEffectType
+     * @param duration
+     * @return
+     */
+    public ItemBuilder addPotionEffect(PotionEffectType potionEffectType, int duration) {
+        addPotionEffect(potionEffectType, duration, 1);
+        return this;
+    }
+
+    /**
+     * apply potion effect type with duration and level on the potion bottle
+     * @param potionEffectType
+     * @param duration
+     * @param amplifier
+     * @return
+     */
+    public ItemBuilder addPotionEffect(PotionEffectType potionEffectType, int duration, int amplifier) {
+        addPotionEffect(potionEffectType, duration, amplifier, true);
+        return this;
+    }
+
+    /**
+     * apply potion effect type with duration, level and ambiance option on the potion bottle
+     * @param potionEffectType
+     * @param duration
+     * @param amplifier
+     * @param ambient
+     * @return
+     */
+    public ItemBuilder addPotionEffect(PotionEffectType potionEffectType, int duration, int amplifier, boolean ambient) {
+        addPotionEffect(potionEffectType, duration, amplifier, ambient, false);
+        return this;
+    }
+
+    /**
+     * apply potion effect type with duration, level and ambiance option on the potion bottle, can make this effect to overwrite
+     * @param potionEffectType
+     * @param duration
+     * @param amplifier
+     * @param ambient
+     * @param overwrite
+     * @return
+     */
+    public ItemBuilder addPotionEffect(PotionEffectType potionEffectType, int duration, int amplifier, boolean ambient, boolean overwrite) {
+        this.potionMeta = (PotionMeta) this.itemStack.getItemMeta();
+        this.potionMeta.addCustomEffect(new PotionEffect(potionEffectType, duration, amplifier, ambient), overwrite);
+        this.itemStack.setItemMeta(this.potionMeta);
+        return this;
+    }
+
+    /**
+     * remove specific potion effect type
+     * @param potionEffectType
+     * @return
+     */
+    public ItemBuilder removePotionEffect(PotionEffectType potionEffectType) {
+        this.potionMeta = (PotionMeta) this.itemStack.getItemMeta();
+        if (this.potionMeta == null || !this.potionMeta.hasCustomEffect(potionEffectType))
+            return this;
+        this.potionMeta.removeCustomEffect(potionEffectType);
+        this.itemStack.setItemMeta(potionMeta);
+        return this;
+    }
+
+    /**
+     * remove all potion effect from a list
+     * @param potionEffectTypes
+     * @return
+     */
+    public ItemBuilder removePotionEffect(List<PotionEffectType> potionEffectTypes) {
+        for (PotionEffectType potionEffectType : potionEffectTypes) {
+            if (this.potionMeta == null || !this.potionMeta.hasCustomEffect(potionEffectType))
+                continue;
+            removePotionEffect(potionEffectType);
+        }
+        return this;
+    }
+
+    /**
+     * clear potion effect on item
+     * @return
+     */
+    public ItemBuilder clearPotionEffect() {
+        if (this.getPotionEffects() == null)
+            return this;
+        for (PotionEffect potionEffect : this.getPotionEffects()) {
+            removePotionEffect(potionEffect.getType());
+        }
+        return this;
+    }
+
+    /**
+     * set potion type on the potion
+     * @param potionType
+     * @return
+     */
+    public ItemBuilder setPotion(PotionType potionType) {
+        setPotion(potionType, true);
+        return this;
+    }
+
+    /**
+     * set potion type on the item with splash option
+     * @param potionType
+     * @param splash
+     * @return
+     */
+    public ItemBuilder setPotion(PotionType potionType, boolean splash) {
+        Potion potion = new Potion(1);
+        potion.setSplash(splash);
+        potion.setType(potionType);
+        potion.apply(this.itemStack);
         return this;
     }
 
@@ -586,7 +759,7 @@ public class ItemBuilder {
      * @return
      */
     public String getDisplayName(){
-        return itemStack.hasItemMeta() && itemMeta.hasDisplayName() ? itemMeta.getDisplayName() : null;
+        return itemStack.hasItemMeta() && itemMeta.hasDisplayName() ? itemMeta.getDisplayName() : "";
     }
 
     /**
@@ -611,6 +784,14 @@ public class ItemBuilder {
      */
     public Set<ItemFlag> getItemFlag(){
         return itemStack.hasItemMeta() && itemMeta.getItemFlags().size() > 0 ? itemMeta.getItemFlags() : null;
+    }
+
+    /**
+     * get potion effects
+     * @return
+     */
+    public List<PotionEffect> getPotionEffects() {
+        return this.potionMeta != null && this.potionMeta.getCustomEffects().size() > 0 ? this.potionMeta.getCustomEffects() : null;
     }
 
     /**
