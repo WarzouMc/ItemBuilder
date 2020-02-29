@@ -1,6 +1,5 @@
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -25,7 +24,7 @@ import java.util.*;
  * So the java doc isn't available.
  * <i>Just open ItemBuilder</i>
  * <i>Json as been not update for potion meta and skull meta</i>
- * @version 0.1.4 (not tested)
+ * @version 0.1.4.1 (not tested)
  * @author WarzouMc
  */
 public class ItemBuilder {
@@ -158,6 +157,7 @@ public class ItemBuilder {
             this.itemMeta = this.itemStack.getItemMeta();
         }
         this.itemMeta.spigot().setUnbreakable(unbreakable);
+        this.itemStack.setItemMeta(this.itemMeta);
         return this;
     }
 
