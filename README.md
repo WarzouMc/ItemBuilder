@@ -3,23 +3,10 @@
 Support on discord
 
 
-ItemBuilder class is a java class for Spigot API (for minecraft plugin).
+# ItemBuilder class is a java class for Spigot API (for minecraft plugin).
 
-This class is not finish, I add methods if I need it.
+## Use ItemBuilder
 
-For create Item you can call the class "ItemBuilder" : new ItemBuilder.
-In parametre you can put Material or Material material, int amount or Material material, int amount, int data.
+In first yout need to call ItemBuilder with her [constructors](https://github.com/WarzouMc/ItemBuilder/wiki/Constructor).
 
-Then that you can just add enchantments, lore and set name att the item (for the time being).
-
-Now you have 2 possibilities :
-- return ItemStack
-- place your item directly in an inventory
-
-For return ItemStack you can use .toItemStack().
-
-And for add in an inventory you can use .inject()
-
-/!\ For the inject methode with out use the methodes who is asking Inventory in parametre you must to define your inventory with .inventory(Inventory).
-
-You can add item with position (.inject([Inventory inventory], int position)) or without (.inject([Inventory inventory])).
+Before add modification on item you need to specify à Material that support what you want to do.
